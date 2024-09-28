@@ -1,18 +1,12 @@
 const { createBot, createProvider, createFlow, addKeyword, addAnswer } = require('@bot-whatsapp/bot')
 
-// PUERTO
+// PUERICULTORA
 
-const express = require('express');
-const app = express();
-
-// Usar la variable de entorno PORT o 3000 como fallback
-const PORT = process.env.PORT || 4000;
-
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-});
-
-
+/* 
+const flowPuericultora = addKeyword(['1','puericultora']).addAnswer([
+    mensage()
+    ])
+*/
 const QRPortalWeb = require('@bot-whatsapp/portal')
 const BaileysProvider = require('@bot-whatsapp/provider/baileys')
 const MockAdapter = require('@bot-whatsapp/database/mock')
@@ -109,22 +103,22 @@ function mensage4() {
 // CARDIOLOGIA
 
 const flowDrBilbao = addKeyword(['1','bilbao']).addAnswer([
-    mensage()
+    mensage3()
 ])
 
 const flowDrAlamada = addKeyword(['2','almada']).addAnswer([
-    mensage()
+    mensage3()
 ])
 
 const flowDrGarcia = addKeyword(['3','garcia']).addAnswer([
-    mensage()
+    mensage3()
 ])
 
 const flowCardiologia = addKeyword(['1', 'cardiologia']).addAnswer(['Por favor selecione el medico'])
     .addAnswer([
         '*1*.- Dr.Bilbao',
         '*2*.- Dr. Almada',
-        '*3*.- Dr. Garcia'],
+        '*3*.- Dr. Garcia Gadda'],
         null,
         null,
         [flowDrBilbao, flowDrAlamada, flowDrGarcia
@@ -188,7 +182,7 @@ const flowCirugiaIntervencion = addKeyword(['2', 'no']).addAnswer(['Por favor se
     [flowDrNegro, flowDrWallace, flowDrLopezC, flowDrArmendariz, flowDrBubilllo, flowDrMichelis, flowDrMiranda]
     )
 
-const flowCirugiaCuracion = addKeyword(['1','si','curacion']).addAnswer([mensage2()])
+const flowCirugiaCuracion = addKeyword(['1','si','curacion']).addAnswer([mensage()])
 
     
 const flowCirugia = addKeyword(['3', 'cirugia']).addAnswer(['¿Desea turno para curaciones o retirar puntos?'])
@@ -239,7 +233,7 @@ const flowOEA = addKeyword(['oea','2']).addAnswer([
     'DNI',
     'Fecha de nacimiento',
     'Localidad',
-    '*Obra social (recuerde que los pacientes de PAMI deberán presentar la Orden medica digital y la credencial actualizada)*'
+    '*(recuerde que el día de la atención, deberá concurrir con la libreta sanitaria)*'
 ])
 
 const flowEstudiosA = addKeyword(['estudios','3']).addAnswer([
@@ -619,7 +613,7 @@ const flowKinesiologia = addKeyword(['25', 'kinesiologia']).addAnswer([mensage4(
 // VACUNACION
 
 const flowVacunacion = addKeyword(['24', 'vacunacion']).addAnswer(['Horario de atencion de 7:00 hs a 18:00 hs',
-    'Los turnos son a demanda, previamente pasando por ventanilla de *TURNOS*.',
+    'Los turnos son a demanda, previamente pasando por ventanilla de *Sala de Gestión del Usuario*.',
     '*Todos los dias se dan todas las vacunas, para FIEBRE AMARILLA debe solicitar turno previo llamando a las lineas fijas intero: 110*'
     //'Medico 2',
     //'Medico 3'
@@ -709,12 +703,22 @@ const flowEstGastroenterologicos = addKeyword(['10','Gastroenterologicos'])
 
 const flowRayos = addKeyword(['rayos','1'])
     .addAnswer(['Enviar foto de la orden de indicación',
+        '',
         'Apellido y nombre:',
-        'DNI:', 
+        '',
+        'DNI:',
+        '',
         'Fecha de nacimiento:',
+        '',
         'Localidad:',
+        '',
         '*Obra social (recuerde que los pacientes de PAMI deberán presentar la Orden medica digital y la credencial actualizada)*',
-        'Y luego aguarde mientras gestionamos su turno, recibirá un mensaje con la confirmación del mismo'
+        '',
+        '*Presentar radiografia previa de columna, el dia de atención*',
+        '',
+        'Y luego aguarde mientras gestionamos su turno, recibirá un mensaje con la confirmación del mismo',
+        '',
+        '_Recuerde que para radiografía de columna lumbar, lumbosacra o espinograma, debe realizar una dieta liviana 48 hrs antes, evitando consumir lacteos o productos gasificados_'
         ])
 
 
@@ -722,14 +726,23 @@ const flowRayos = addKeyword(['rayos','1'])
 
 const flowEspinografia = addKeyword(['2','Espinografia'])
     .addAnswer(['Enviar foto de la orden de indicación',
+        '',
         'Apellido y nombre:',
-        'DNI:', 
+        '',
+        'DNI:',
+        '',
         'Fecha de nacimiento:',
+        '',
         'Localidad:',
+        '',
         '*Obra social (recuerde que los pacientes de PAMI deberán presentar la Orden medica digital y la credencial actualizada)*',
-        '*Presentar radiografia previa de columna, el dia de atención',
-        'Y luego aguarde mientras gestionamos su turno, recibirá un mensaje con la confirmación del mismo'
-        ])
+        '',
+        '*Presentar radiografia previa de columna, el dia de atención*',
+        '',
+        'Y luego aguarde mientras gestionamos su turno, recibirá un mensaje con la confirmación del mismo',
+        '',
+        '_Recuerde que para radiografía de columna lumbar, lumbosacra o espinograma, debe realizar una dieta liviana 48 hrs antes, evitando consumir lacteos o productos gasificados_'
+       ])
 
 // TOMOGRAFIA
 
@@ -782,12 +795,19 @@ const flowElectroenfacelograma = addKeyword(['7','Electroencefalograma'])
 
 const flowDoppler = addKeyword(['8','Doppler'])
     .addAnswer(['Enviar foto de la orden de indicación',
+        '',
         'Apellido y nombre:',
-        'DNI:', 
+        '',
+        'DNI:',
+        '',
         'Fecha de nacimiento:',
+        '',
         'Localidad:',
+        '',
         '*Obra social (recuerde que los pacientes de PAMI deben dirigirse a la agencia de PAMI para consultar convenio o puede también hacerlo telefónicamente a nuestras líneas fijas)*',
+        '',
         '*Recuerde que solo se realizan Doppler de vasos de cuello, cardíaco, obstétrico, venoso de MMII y arterial de MMII*',
+        '',
         'Y luego aguarde mientras gestionamos su turno, recibirá un mensaje con la confirmación del mismo'
         ])
 
@@ -815,6 +835,12 @@ const flowEspirometria = addKeyword(['12','espirometria'])
         'Y luego aguarde mientras gestionamos su turno, recibirá un mensaje con la confirmación del mismo'
         ])
 
+// ECOGRAFIA
+
+const flowEcografia = addKeyword(['13','ecografia'])
+    .addAnswer(['Para solicitar turno de ecografía, debe concurrir de manera presencial a la ventanilla de *Sala de Gestión del Usuario* de lunes a viernes (días hábiles) de 12 a 18 hs.',
+        'Muchas gracias'])
+    
 // ESTUDIO DE DIAGNOSTICO
 
  const flowEstudioDiag = addKeyword(['2','diagnostico','estudio'])
@@ -830,12 +856,13 @@ const flowEspirometria = addKeyword(['12','espirometria'])
             '*9.-* Estudios Audiologicos', 
             '*10.-* Estudios Gastroenterológicos',
             '*11.-* Laboratorio',
-            '*12.-* Espirometria'
+            '*12.-* Espirometria',
+            '*13.-* Ecografia'
         ],
         null,
         null,
         [
-            flowLaboratorio, flowEstGastroenterologicos, flowEspirometria, flowRayos, flowEspinografia, flowTomografia, flowMamografia, 
+            flowEcografia, flowLaboratorio, flowEstGastroenterologicos, flowEspirometria, flowRayos, flowEspinografia, flowTomografia, flowMamografia, 
             flowMagnificaciones, flowEcocardiograma, flowElectroenfacelograma, 
             flowDoppler, flowEstAudiologicos
         ])
@@ -874,7 +901,7 @@ const flowModificarT = addKeyword(['1','modificar']).addAnswer([
         'Obra social:',
         'Turno que tenía otorgado (Médico/Especialidad, día que tiene el turno asignado'])
 
- const flowCancelarT = addKeyword(['1','mopdificar']).addAnswer([
+ const flowCancelarT = addKeyword(['2','cancelar']).addAnswer([
         'Indique los siguientes datos para poder cancelar su turno',
         'Apellido y nombre:',
         'DNI:',
@@ -906,11 +933,7 @@ const flowConfirmacion = addKeyword(['3','confirmacion'])
     'Localidad:',
     'Obra social:',
     'Turno que tenía otorgado (Médico/Especialidad, día que tiene el turno asignado'])
-    /*.addAnswer('Has seleccionado al Médico 1. Por favor, ingresa tu nombre:', { capture: true }, async (message, { flowDynamic }) => {
-        const nombre = message.body;
-        console.log('Nombre ingresado:', nombre); // Verificar si se captura el nombre
-        await flowDynamic(`Gracias, ${nombre}.`);
-    });*/
+  
 
 
 
@@ -924,9 +947,35 @@ const flowConsultas = addKeyword(['4','consultas'])
         '2344-454112',
         '2344-454114',
         '2344-454113',
-        'De lunes a viernes (días hábiles) en horario de 7:00 a 17:00 hs'])
+        'De lunes a viernes (días hábiles) en horario de 7:00 a 12:00 hs'])
 
+// DONAR SANGRE  
 
+// MENSAJE DE DONANTE VOLUNTARIO
+
+const flowDonacionVoluntaria = addKeyword(['1','voluntario']).addAnswer([
+    mensage2()])
+
+// MENSAJE DE DONANTE POR INTERVENCION
+
+const flowDonacionIntervencion = addKeyword(['2','intervencion']).addAnswer([
+    'Por favor, ingrese los siguientes datos:',
+    'Apellido y nombre',
+    'DNI',
+    'Fecha de nacimiento',
+    'Localidad',
+    'Para quien donaras:',
+    'Y luego aguarde mientras gestionamos su turno, recibirá un mensaje con la confirmación del mismo'
+    ])   
+
+const flowDonacionSangre = addKeyword(['5','donar'])
+    .addAnswer(['¿Para que voy a donar?:',
+        ' ',
+        '*1.-* Donante voluntario.',
+        '*2.-* Donación por cirugía o intervención.'],
+    null,
+    null,
+    [flowDonacionIntervencion, flowDonacionVoluntaria])
 
 
 
@@ -945,11 +994,13 @@ const flowHorarioAtencion = addKeyword(['repollo'])
         '*2.-*  Modificación o cancelación de turnos reservados',
         '*3.-*  Confirmación de asistencia',
         '*4.-*  Consultas',
+        '*5.-*  Quiero donar sangre 🩸'
         ],
         null,
         null,
-        [flowConsultas, flowConfirmacion, flowModificarCancelarT, flowResTurno]
-    )
+        [flowDonacionSangre, flowConsultas, flowConfirmacion, flowModificarCancelarT, flowResTurno])
+
+
 const flowFueraDeHorario = addKeyword(['repollo']).addAnswer([
     '*Horarios de atención*',
     'Lunes a viernes (días hábiles) de 7:00 a 12:00 Hs.',
