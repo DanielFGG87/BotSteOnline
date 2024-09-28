@@ -899,7 +899,7 @@ const flowModificarT = addKeyword(['1','modificar']).addAnswer([
         'Fecha de nacimiento:',
         'Localidad:',
         'Obra social:',
-        'Turno que tenía otorgado (Médico/Especialidad, día que tiene el turno asignado'])
+        'Turno que tenía otorgado (Médico/Especialidad, día que tiene el turno asignado)'])
 
  const flowCancelarT = addKeyword(['2','cancelar']).addAnswer([
         'Indique los siguientes datos para poder cancelar su turno',
@@ -908,7 +908,7 @@ const flowModificarT = addKeyword(['1','modificar']).addAnswer([
         'Fecha de nacimiento:',
         'Localidad:',
         'Obra social:',
-       'Turno que tenía otorgado (Médico/Especialidad, día que tiene el turno asignado'])
+       'Turno que tenía otorgado (Médico/Especialidad, día que tiene el turno asignado)'])
 
 const flowModificarCancelarT = addKeyword(['2','modificacion'])
     .addAnswer([
@@ -932,7 +932,7 @@ const flowConfirmacion = addKeyword(['3','confirmacion'])
     'Fecha de nacimiento:',
     'Localidad:',
     'Obra social:',
-    'Turno que tenía otorgado (Médico/Especialidad, día que tiene el turno asignado'])
+    'Turno que tenía otorgado (Médico/Especialidad, día que tiene el turno asignado)'])
   
 
 
