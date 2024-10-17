@@ -1,4 +1,4 @@
-const { createBot, createProvider, createFlow, addKeyword, addAnswer } = require('@bot-whatsapp/bot')
+const { createBot, createProvider, createFlow, addKeyword, addAnswer, EVENTS} = require('@bot-whatsapp/bot')
 
 
 const QRPortalWeb = require('@bot-whatsapp/portal')
@@ -13,7 +13,7 @@ function horarioActual() {
     const currentDay = currentDate.getDay(); // Día de la semana (0 es domingo, 6 es sábado)
 
     // Definimos que el horario de atención es de lunes a viernes, de 8:00 a 18:00
-    if (currentDay >= 0 && currentDay <= 6 && currentHour >= 1 && currentHour < 23) {
+    if (currentDay >= 0 && currentDay <= 6 && currentHour >= 0 && currentHour < 24) {
         return true; // Dentro del horario de atención
     }
     return false; // Fuera del horario de atención
@@ -21,44 +21,33 @@ function horarioActual() {
 
 // PEDIDO DE DATOS
 
-async function pedirDatosUsuario(flowDynamic) {
-    const datos = {};
-
-    // Pedir el nombre
-    await flowDynamic('Por favor, ingresa tu nombre:', { capture: true }, async (message) => {
-        datos.nombre = message.body;
-    });
-
-    // Pedir la edad
-    await flowDynamic('Gracias, ahora ingresa tu edad:', { capture: true }, async (message) => {
-        datos.edad = message.body;
-    });
-
-    // Pedir el correo
-    await flowDynamic('Ahora ingresa tu correo electrónico:', { capture: true }, async (message) => {
-        datos.correo = message.body;
-    });
-
-    // Mostrar los datos capturados
-    await flowDynamic(`Datos ingresados:
-    - Nombre: ${datos.nombre}
-    - Edad: ${datos.edad}
-    - Correo: ${datos.correo}`);
-
-    // Retorna los datos si necesitas procesarlos después
-    return datos;
+function redireccionDatos(flow) {
+    return async (ctx, { gotoFlow }) => {
+        return gotoFlow(flow);
+    };
 }
+
+//RETORNO MENU INICIAL
+
+const flowRetorno = addKeyword('0', {sensitive: true}).addAnswer(['Volviendo al menu inicial..'])
+.addAction(
+    async (ctx, { gotoFlow }) => {
+    // Ir automáticamente al siguiente flujo (flow2)
+   return gotoFlow(flowHorarioAtencion);
+   })
+
+
 
 
 // MENSAJES
 
 function mensage() {
-    return [`Por favor, ingrese los siguientes datos:\n
+    return [/*`Por favor, ingrese los siguientes datos:\n
     Apellido y Nombre:\n
     DNI:\n
     Fecha de Nacimiento:\n
-    Localidad:\n
-    Obra social (recuerde que los pacientes de PAMI deberán presentar la Orden médica digital y la credencial actualizada)\n
+    Localidad:\n*/
+    `Recuerde que los pacientes de PAMI deberán presentar la Orden médica digital y la credencial actualizada\n
     Y luego aguarde mientras gestionamos su turno, recibirá un mensaje con la confirmación del mismo`]}
 
 function mensage2() {
@@ -70,22 +59,17 @@ function mensage2() {
     Y luego aguarde mientras gestionamos su turno, recibirá un mensaje con la confirmación del mismo`]}  
 
 function mensage3() {
-    return [`Por favor, ingrese los siguientes datos:\n
-    Apellido y Nombre:\n
-    DNI:\n
-    Fecha de Nacimiento:\n
-    Localidad:\n
-    Obra social:\n
-    Y luego aguarde mientras gestionamos su turno, recibirá un mensaje con la confirmación del mismo`]}
+    return [`Luego aguarde mientras gestionamos su turno, recibirá un mensaje con la confirmación del mismo`]}
 
 
 function mensage4() {
-   return [`Enviar foto de la orden de indicación\n
+   return [
+   /* `Enviar foto de la orden de indicación\n
    Apellido y Nombre:\n
    DNI:\n
    Fecha de Nacimiento:\n
-   Localidad:\n
-   *Obra social (recuerde que los pacientes de PAMI deben dirigirse a la agencia de PAMI para consultar convenio o puede también hacerlo telefónicamente a nuestras líneas fijas)*\n
+   Localidad:\n*/
+   `Recuerde que los pacientes de PAMI deben dirigirse a la agencia de PAMI para consultar convenio o puede también hacerlo telefónicamente a nuestras líneas fijas*\n
     Y luego aguarde mientras gestionamos su turno, recibirá un mensaje con la confirmación del mismo`]}
 
     
@@ -573,14 +557,24 @@ const flowOtorrino = addKeyword(['22', 'otorrino']).addAnswer(['Por favor seleci
 
 // NEFROLOGIA
 
-const flowDrCarriquiri = addKeyword(['1','carriquiri']).addAnswer([
-    mensage()])
+const flowDrCarriquiri = addKeyword(['1','carriquiri'])
+    .addAction(
+    async (ctx, { flowDynamic, state }) => {
+    const medico = 'Dr. Carriquiri'; // Tu dato
+    await state.update({ medico: medico })})
+    .addAction(
+        async (ctx, { flowDynamic, state }) => {
+        const especialidad = 'Nefrologia'; // Tu dato
+        await state.update({ especialidad: especialidad })})
+    .addAction(
+    async (ctx, { gotoFlow }) => {
+    // Ir automáticamente al siguiente flujo (flow2)
+    return gotoFlow(flowDatos);
+    })
 
 const flowNefrologia = addKeyword(['23', 'nefrologia']).addAnswer(['Por favor selecione el medico'])
     .addAnswer([
         '*1*.- Dr. Carriquiri'],
-        //'Medico 2',
-        //'Medico 3'
         null,
         null,
         [flowDrCarriquiri])
@@ -622,7 +616,20 @@ const flowPsicologia = addKeyword(['27', 'psicologia']).addAnswer([mensage3()])
 
 // NEUROLOGIA
 
-const flowDraAyarza = addKeyword(['1','ayarza']).addAnswer([mensage3()])
+const flowDraAyarza = addKeyword(['1','ayarza'])
+    .addAction(
+    async (ctx, { flowDynamic, state }) => {
+    const medico = 'Dra. Ayarza Ana'; // Tu dato
+    await state.update({ medico: medico })})
+    .addAction(
+        async (ctx, { flowDynamic, state }) => {
+        const especialidad = 'Neurologia'; // Tu dato
+        await state.update({ especialidad: especialidad })})
+    .addAction(
+    async (ctx, { gotoFlow }) => {
+    // Ir automáticamente al siguiente flujo (flow2)
+    return gotoFlow(flowDatos);
+    })
 
 const flowNeurologia = addKeyword(['28', 'neurologia']).addAnswer(['Por favor selecione el medico'])
 .addAnswer([
@@ -630,7 +637,7 @@ const flowNeurologia = addKeyword(['28', 'neurologia']).addAnswer(['Por favor se
     null,
     null,
     [flowDraAyarza])
-
+   
 
 // PUERICULTORA
 
@@ -823,7 +830,15 @@ const flowEstAudiologicos = addKeyword(['9','Estudios audiologicos'])
 // LABORATORIO
 
 const flowLaboratorio = addKeyword(['11','laboratorio'])
-    .addAnswer([mensage4()])
+.addAction(
+    async (ctx, { flowDynamic, state }) => {
+    const especialidad = 'Laboratorio'; // Tu dato
+    await state.update({ especialidad: especialidad })})
+.addAction(
+async (ctx, { gotoFlow }) => {
+// Ir automáticamente al siguiente flujo (flow2)
+return gotoFlow(flowFoto);
+})
 
 // ESPIROMETRIA
 
@@ -916,11 +931,12 @@ const flowModificarCancelarT = addKeyword(['2','modificacion'])
     .addAnswer([
         '*Indique si quiere Cancelar o modificar su turno*',
         '',
+        '*0*.- Para volver al menu inicial',
         '*1*.- Modificar',
         '*2*.- Cancelar'],
         null,
         null,
-        [flowModificarT, flowCancelarT])
+        [flowModificarT, flowCancelarT, flowRetorno])
 
 // #####
 // CONFIRMACION DE TURNOS
@@ -928,29 +944,178 @@ const flowModificarCancelarT = addKeyword(['2','modificacion'])
 
 const flowConfirmacion = addKeyword(['3','confirmacion'])
     .addAnswer([
-    'Indique los siguientes datos para poder confirmar su turno',
+    /*'Indique los siguientes datos para poder confirmar su turno',
     'Apellido y nombre:',
     'DNI:',
     'Fecha de nacimiento:',
     'Localidad:',
-    'Obra social:',
+    'Obra social:',*/
     'Turno que tenía otorgado (Médico/Especialidad, día que tiene el turno asignado)'])
-  
+
+    .addAction(
+         async (ctx, { gotoFlow }) => {
+         // Ir automáticamente al siguiente flujo (flow2)
+        return gotoFlow(flowDatos);
+        })
+
+//DATOS
 
 
+const flowDatos = addKeyword(EVENTS.ACTION)
+.addAnswer('Voy a pedirte unos datos para agendarte')
+.addAction(async (_, { flowDynamic }) => {
+    
+    await flowDynamic('¿Cual es tu apellido y nombre?')
+})
+.addAction({ capture: true }, async (ctx, { state, flowDynamic, extensions }) => {
+    await state.update({ name: ctx.body })
+})
+.addAnswer(
+    '¿Cual es tu DNI?',
+    {capture: true},
+    async (ctx, { flowDynamic, state }) => {
+        await state.update({ dni: ctx.body })
+        const myState = state.getMyState()
+      //  await flowDynamic(`Gracias por tu DNI! ${myState.dni}`)
+    }
+)
+.addAnswer(
+    '¿Cual es tu fecha de nacimiento?',
+    {capture: true},
+    async (ctx, { flowDynamic, state }) => {
+        await state.update({ nac: ctx.body })
+        const myState = state.getMyState()
+       // await flowDynamic(`Gracias por tu edad! ${myState.nac}`)
+    }
+)
+
+.addAnswer(
+    '¿Cual es tu localidad?',
+    {capture: true},
+    async (ctx, { flowDynamic, state }) => {
+        await state.update({ loc: ctx.body })
+        const myState = state.getMyState()
+       // await flowDynamic(`Gracias por tu edad! ${myState.loc}`)
+    }
+)
+
+.addAnswer(
+    '¿Cual es tu obra social?',
+    {capture: true},
+    async (ctx, { flowDynamic, state }) => {
+        await state.update({ obr: ctx.body })
+        const myState = state.getMyState()
+        //await flowDynamic(`Gracias por tu edad! ${myState.nac}`)
+    }
+)
+
+.addAnswer('Tus datos son:', null, async (_, { flowDynamic, state }) => {
+    const myState = state.getMyState()
+    flowDynamic(
+   `Nombre: ${myState.name}
+    Fecha de nacimiento : ${myState.nac}
+    DNI: ${myState.dni}
+    Localidad : ${myState.nac}
+    Obra social: ${myState.obr}
+    Especialidad: ${myState.especialidad}
+    Medico: ${myState.medico}
+    ${mensage()}`)
+    
+})
+
+// DATOS Y FOTO
+const flowFoto = addKeyword(EVENTS.ACTION)
+.addAnswer('Por favor, envíam la foto de la orden de indicacion.')
+.addAnswer(
+    null, 
+    { capture: true }, 
+    async (ctx, { flowDynamic }) => {
+        console.log('Contexto recibido:', ctx); // Depuración para ver el mensaje recibido
+
+        // Verificar si el mensaje contiene una imagen (basado en mimetype)
+        if (ctx?.message?.mimetype && ctx.message.mimetype.startsWith('image/')) {
+            // Si el mensaje es una imagen, continuar con el flujo
+            return flowDynamic('¡Foto recibida! Continuamos con el siguiente paso...');
+        } else {
+            // Si no es una imagen, pedir nuevamente la foto
+            return flowDynamic('Lo siento, necesito que envíes una foto. Inténtalo de nuevo.');
+        }
+    }
+);
+
+const flowDatosFoto = addKeyword(EVENTS.ACTION)
+.addAnswer('Voy a pedirte unos datos para agendarte')
+.addAction(async (_, { flowDynamic }) => {
+    
+    await flowDynamic('¿Cual es tu apellido y nombre?')
+})
+.addAction({ capture: true }, async (ctx, { state, flowDynamic, extensions }) => {
+    await state.update({ name: ctx.body })
+})
+.addAnswer(
+    '¿Cual es tu DNI?',
+    {capture: true},
+    async (ctx, { flowDynamic, state }) => {
+        await state.update({ dni: ctx.body })
+        const myState = state.getMyState()
+      //  await flowDynamic(`Gracias por tu DNI! ${myState.dni}`)
+    }
+)
+.addAnswer(
+    '¿Cual es tu fecha de nacimiento?',
+    {capture: true},
+    async (ctx, { flowDynamic, state }) => {
+        await state.update({ nac: ctx.body })
+        const myState = state.getMyState()
+       // await flowDynamic(`Gracias por tu edad! ${myState.nac}`)
+    }
+)
+
+.addAnswer(
+    '¿Cual es tu localidad?',
+    {capture: true},
+    async (ctx, { flowDynamic, state }) => {
+        await state.update({ loc: ctx.body })
+        const myState = state.getMyState()
+       // await flowDynamic(`Gracias por tu edad! ${myState.loc}`)
+    }
+)
+
+.addAnswer(
+    '¿Cual es tu obra social?',
+    {capture: true},
+    async (ctx, { flowDynamic, state }) => {
+        await state.update({ obr: ctx.body })
+        const myState = state.getMyState()
+        //await flowDynamic(`Gracias por tu edad! ${myState.nac}`)
+    }
+)
+
+.addAnswer('Tus datos son:', null, async (_, { flowDynamic, state }) => {
+    const myState = state.getMyState()
+    flowDynamic(
+   `Nombre: ${myState.name}
+    Fecha de nacimiento : ${myState.nac}
+    DNI: ${myState.dni}
+    Localidad : ${myState.nac}
+    Obra social: ${myState.obr}
+    Especialidad: ${myState.especialidad}
+    ${mensage4()}`)
+    
+})
 
 // #####
 // CONSULTAS
 // #####
 
-const flowConsultas = addKeyword(['4','consultas'])
+const flowConsultas = addKeyword(['4','Consultas'], {sensitive : true})
     .addAnswer(['Por consultas debe comunicarse a nuestras líneas fijas:',
         ' ',
         '2344-454112',
         '2344-454114',
         '2344-454113',
         'De lunes a viernes (días hábiles) en horario de 7:00 a 12:00 hs'])
-
+    
 // DONAR SANGRE  
 
 // MENSAJE DE DONANTE VOLUNTARIO
@@ -984,7 +1149,7 @@ const flowDonacionSangre = addKeyword(['5','donar'])
 // MENU INICIAL 
 
 
-const flowHorarioAtencion = addKeyword(['repollo'])
+const flowHorarioAtencion = addKeyword(['abcdefg'])
     .addAnswer(
         [
         //'¡Hola!',
@@ -1000,7 +1165,7 @@ const flowHorarioAtencion = addKeyword(['repollo'])
         ],
         null,
         null,
-        [flowDonacionSangre, flowConsultas, flowConfirmacion, flowModificarCancelarT, flowResTurno])
+        [ flowDonacionSangre, flowConsultas, flowConfirmacion, flowModificarCancelarT, flowResTurno])
 
 
 const flowFueraDeHorario = addKeyword(['repollo']).addAnswer([
@@ -1029,7 +1194,7 @@ const flowFueraDeHorario = addKeyword(['repollo']).addAnswer([
 
 const main = async () => {
     const adapterDB = new MockAdapter()
-    const adapterFlow = createFlow([flowPrincipal])
+    const adapterFlow = createFlow([flowPrincipal, flowDatos, flowHorarioAtencion, flowDatosFoto, flowFoto])
     const adapterProvider = createProvider(BaileysProvider)
 
     createBot({
@@ -1038,7 +1203,7 @@ const main = async () => {
         database: adapterDB,
     })
 
-    QRPortalWeb()
+    QRPortalWeb({port:4000})
 }
 
 main()
