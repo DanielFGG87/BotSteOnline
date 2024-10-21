@@ -1,9 +1,9 @@
-const { createBot, createProvider, createFlow, addKeyword, addAnswer, addAction, EVENT } = require('@bot-whatsapp/bot')
+import { join } from 'path'
+import { createBot, createProvider, createFlow, addKeyword, utils, EVENTS } from '@builderbot/bot'
+import { MemoryDB as Database } from '@builderbot/bot'
+import { BaileysProvider as Provider } from '@builderbot/provider-baileys'
 
-
-const QRPortalWeb = require('@bot-whatsapp/portal')
-const BaileysProvider = require('@bot-whatsapp/provider/baileys')
-const MockAdapter = require('@bot-whatsapp/database/mock')
+const PORT = process.env.PORT ?? 3008
 
 // HORARIO
 
@@ -22,52 +22,124 @@ function horarioActual() {
 
 
 // MENSAJES
-
+//Datos obrasocial PAMI
 function mensage() {
-    return [`Por favor, ingrese los siguientes datos:\n
-    Apellido y Nombre:\n
-    DNI:\n
-    Fecha de Nacimiento:\n
-    Localidad:\n
-    Obra social (recuerde que los pacientes de PAMI deberán presentar la Orden médica digital y la credencial actualizada)\n
+    return [`ecuerde que los pacientes de PAMI deberán presentar la Orden médica digital y la credencial actualizada)\n
     Y luego aguarde mientras gestionamos su turno, recibirá un mensaje con la confirmación del mismo`]}
-
+//Datos
 function mensage2() {
-    return [`Por favor, ingrese los siguientes datos:\n
-    Apellido y Nombre:\n
-    DNI:\n
-    Fecha de Nacimiento:\n
-    Localidad:\n
-    Y luego aguarde mientras gestionamos su turno, recibirá un mensaje con la confirmación del mismo`]}  
-
+    return [`Y luego aguarde mientras gestionamos su turno, recibirá un mensaje con la confirmación del mismo`]}  
+//Datos y obrasocial
 function mensage3() {
-    return [`Por favor, ingrese los siguientes datos:\n
-    Apellido y Nombre:\n
-    DNI:\n
-    Fecha de Nacimiento:\n
-    Localidad:\n
-    Obra social:\n
-    Y luego aguarde mientras gestionamos su turno, recibirá un mensaje con la confirmación del mismo`]}
+    return [`Y luego aguarde mientras gestionamos su turno, recibirá un mensaje con la confirmación del mismo`]}
 
+//Con foto
 
+//Datos, obrasocial PAMI
 function mensage4() {
-   return [`Enviar foto de la orden de indicación\n
-   Apellido y Nombre:\n
-   DNI:\n
-   Fecha de Nacimiento:\n
-   Localidad:\n
-   *Obra social (recuerde que los pacientes de PAMI deben dirigirse a la agencia de PAMI para consultar convenio o puede también hacerlo telefónicamente a nuestras líneas fijas)*\n
-    Y luego aguarde mientras gestionamos su turno, recibirá un mensaje con la confirmación del mismo`]}
-
+   return ['*Recuerde que los pacientes de PAMI deben dirigirse a la agencia de PAMI para consultar convenio o puede también hacerlo telefónicamente a nuestras líneas fijas)*\
+    Y luego aguarde mientras gestionamos su turno, recibirá un mensaje con la confirmación del mismo']}
+//Datos y obrasocial
 function mensage5() {
-    return [`Enviar foto de la orden de indicación\n
-    Apellido y Nombre:\n
-    DNI:\n
-    Fecha de Nacimiento:\n
-    Localidad:\n
-    Obra social:\n
-    Y luego aguarde mientras gestionamos su turno, recibirá un mensaje con la confirmación del mismo`]}    
+    return [`Y luego aguarde mientras gestionamos su turno, recibirá un mensaje con la confirmación del mismo`]}    
 
+// PETICION DE DATOS
+
+    const flowDatosObra = addKeyword(EVENTS.ACTION)
+    .addAnswer('Voy a pedirte unos datos para agendar tu turno')
+    .addAnswer(
+        '¿Cual es tu apellido y nombre?',
+        {capture: true},
+        async (ctx, { flowDynamic, state }) => {
+            await state.update({ name: ctx.body })
+            const myState = state.getMyState()
+          //  await flowDynamic(`Gracias por tu Nombre! ${myState.name}`)
+        }
+    )
+    .addAnswer(
+        '¿Cual es tu DNI?',
+        {capture: true},
+        async (ctx, { flowDynamic, state }) => {
+            await state.update({ dni: ctx.body })
+            const myState = state.getMyState()
+          //  await flowDynamic(`Gracias por tu DNI! ${myState.dni}`)
+        }
+    )
+    .addAnswer(
+        '¿Cual es tu fecha de nacimiento?',
+        {capture: true},
+        async (ctx, { flowDynamic, state }) => {
+            await state.update({ nac: ctx.body })
+            const myState = state.getMyState()
+           // await flowDynamic(`Gracias por tu edad! ${myState.nac}`)
+        }
+    )
+    
+    .addAnswer(
+        '¿Cual es tu localidad?',
+        {capture: true},
+        async (ctx, { flowDynamic, state }) => {
+            await state.update({ loc: ctx.body })
+            const myState = state.getMyState()
+           // await flowDynamic(`Gracias por tu edad! ${myState.loc}`)
+        }
+    )
+    
+    .addAnswer(
+        '¿Cual es tu obra social?',
+        {capture: true},
+        async (ctx, { flowDynamic, state }) => {
+            await state.update({ obr: ctx.body })
+            const myState = state.getMyState()
+            //await flowDynamic(`Gracias por tu edad! ${myState.nac}`)
+        }
+    )
+    
+    .addAnswer('Tus datos son:', null, async (_, { flowDynamic, state }) => {
+        const myState = state.getMyState()
+        flowDynamic(`   Nombre: ${myState.name}
+        Fecha de nacimiento : ${myState.nac}
+        DNI: ${myState.dni}
+        Localidad : ${myState.nac}
+        Obra social: ${myState.obr}
+        Especialidad: ${myState.especialidad}
+        Medico: ${myState.medico}
+    
+        ${mensage()}`)
+        
+    })
+
+// PETICION DE FOTO
+
+let attemptCount = 0; // Variable global para contar los intentos
+
+const flowFoto = addKeyword(EVENTS.ACTION)
+.addAnswer('Por favor, envíame la foto del orden.', {
+    capture: true
+}, async (ctx, { flowDynamic, endFlow, fallBack, gotoFlow }) => {
+    attemptCount++; // Incrementa el contador de intentos
+
+    // Verifica si el mensaje contiene una imagen
+    if (ctx?.message?.imageMessage) {
+        console.log('Recibiste una imagen.');
+        // Resetea el contador de intentos
+        attemptCount = 0;
+        // Continúa el flujo ya que recibiste una foto
+        await flowDynamic('Gracias, continuemos.');
+        return gotoFlow(flowDatosFoto)
+    } else {
+        console.log(`No se recibió una imagen. Intento ${attemptCount} de 5.`);
+        // Si ha alcanzado los 5 intentos, finaliza el flujo
+        if (attemptCount >= 5) {
+            attemptCount = 0; // Resetea el contador
+            return endFlow('Has alcanzado el número máximo de intentos. Inténtalo más tarde.');
+        }
+        // Volver a pedir la imagen si no se envió una
+        await flowDynamic(`Esto no es una foto. Tienes ${5 - attemptCount} intentos restantes, por favor envia la foto de la orden.`);
+        // Reintentar el mismo flujo
+        return fallBack(); // Reinicia el flujo hasta recibir la imagen o alcanzar el límite
+    }
+});
 
 // ROTORNO AL MENU INICIAL
 
@@ -90,45 +162,42 @@ const flowDrBilbao = addKeyword(['1','bilbao'])
     .addAction(
     async (ctx, { state }) => {
     const medico = 'Dr.Bilbao'; // Tu dato
-    await state.update({ medico: medico })})
-    .addAction(
-    async (ctx, { state }) => {
+    await state.update({ medico: medico })
     const especialidad = 'Cardiologia'; // Tu dato
-    await state.update({ especialidad: especialidad })})
+    await state.update({ especialidad: especialidad })
+    const msj = mensage(); // Tu dato
+    await state.update({ msj: msj })})
     .addAction(
     async (ctx, { gotoFlow }) => {
-// Ir automáticamente al siguiente flujo (flow2)
-    return gotoFlow(flowDatosMS1);
+    return gotoFlow(flowDatosObra);
     }) 
 
 const flowDrAlamada = addKeyword(['2','almada'])
     .addAction(
     async (ctx, { state }) => {
     const medico = 'Dr. Almada'; // Tu dato
-    await state.update({ medico: medico })})
-    .addAction(
-    async (ctx, { state }) => {
+        await state.update({ medico: medico })
     const especialidad = 'Cardiologia'; // Tu dato
-    await state.update({ especialidad: especialidad })})
+        await state.update({ especialidad: especialidad })
+    const msj = mensage(); // Tu dato
+        await state.update({ msj: msj })})
     .addAction(
     async (ctx, { gotoFlow }) => {
-// Ir automáticamente al siguiente flujo (flow2)
-    return gotoFlow(flowDatosMS1);
+        return gotoFlow(flowDatosObra);
     })
 
 const flowDrGarcia = addKeyword(['3','garcia'])
     .addAction(
     async (ctx, { state }) => {
     const medico = 'Dr. Garcia Gadda'; // Tu dato
-    await state.update({ medico: medico })})
-    .addAction(
-    async (ctx, { state }) => {
+        await state.update({ medico: medico })
     const especialidad = 'Cardiologia'; // Tu dato
-    await state.update({ especialidad: especialidad })})
+        await state.update({ especialidad: especialidad })
+    const msj = mensage(); // Tu dato
+        await state.update({ msj: msj })})
     .addAction(
     async (ctx, { gotoFlow }) => {
-// Ir automáticamente al siguiente flujo (flow2)
-    return gotoFlow(flowDatosMS1);
+    return gotoFlow(flowDatosObra);
     })
 const flowCardiologia = addKeyword(['1', 'cardiologia']).addAnswer(['Por favor selecione el medico.'])
     .addAnswer([
@@ -147,30 +216,28 @@ const flowDrLopez = addKeyword(['2','lopez'])
 .addAction(
     async (ctx, { state }) => {
     const medico = 'Dra. Lopez'; // Tu dato
-    await state.update({ medico: medico })})
-    .addAction(
-    async (ctx, { state }) => {
+        await state.update({ medico: medico })
     const especialidad = 'Clinica'; // Tu dato
-    await state.update({ especialidad: especialidad })})
+        await state.update({ especialidad: especialidad })
+    const msj = mensage3(); // Tu dato
+        await state.update({ msj: msj })})
     .addAction(
     async (ctx, { gotoFlow }) => {
-// Ir automáticamente al siguiente flujo (flow2)
-    return gotoFlow(flowDatosMS3);
+        return gotoFlow(flowDatosObra);
     })
 
 const flowDrRegina = addKeyword(['1','regina'])
 .addAction(
     async (ctx, { state }) => {
     const medico = 'Dr. La Regina'; // Tu dato
-    await state.update({ medico: medico })})
-    .addAction(
-    async (ctx, { state }) => {
+        await state.update({ medico: medico })
     const especialidad = 'Clinica'; // Tu dato
-    await state.update({ especialidad: especialidad })})
+        await state.update({ especialidad: especialidad })
+    const msj = mensage3(); // Tu dato
+        await state.update({ msj: msj })})
     .addAction(
     async (ctx, { gotoFlow }) => {
-// Ir automáticamente al siguiente flujo (flow2)
-    return gotoFlow(flowDatosMS3);
+        return gotoFlow(flowDatosObra);
     })
 
 const flowClinicaMed = addKeyword(['2', 'clinica']).addAnswer(['Por favor selecione el medico.'])
@@ -190,105 +257,98 @@ const flowDrNegro = addKeyword(['1','negro'])
 .addAction(
     async (ctx, { state }) => {
     const medico = 'Dr. Negro'; // Tu dato
-    await state.update({ medico: medico })})
-    .addAction(
-    async (ctx, { state }) => {
+        await state.update({ medico: medico })
     const especialidad = 'Cirugia'; // Tu dato
-    await state.update({ especialidad: especialidad })})
+        await state.update({ especialidad: especialidad })
+    const msj = mensage(); // Tu dato
+        await state.update({ msj: msj })})
     .addAction(
     async (ctx, { gotoFlow }) => {
-// Ir automáticamente al siguiente flujo (flow2)
-    return gotoFlow(flowDatosMS1);
+        return gotoFlow(flowDatosObra);
     })
 
 const flowDrWallace = addKeyword(['2','wallace'])
 .addAction(
     async (ctx, { state }) => {
     const medico = 'Dr. Wallace'; // Tu dato
-    await state.update({ medico: medico })})
-    .addAction(
-    async (ctx, { state }) => {
+        await state.update({ medico: medico })
     const especialidad = 'Cirugia'; // Tu dato
-    await state.update({ especialidad: especialidad })})
+        await state.update({ especialidad: especialidad })
+    const msj = mensage(); // Tu dato
+        await state.update({ msj: msj })})
     .addAction(
     async (ctx, { gotoFlow }) => {
-// Ir automáticamente al siguiente flujo (flow2)
-    return gotoFlow(flowDatosMS1);
+        return gotoFlow(flowDatosObra);
     })
 
 const flowDrLopezC = addKeyword(['3','lopez'])
 .addAction(
     async (ctx, { state }) => {
     const medico = 'Dr. Wallace'; // Tu dato
-    await state.update({ medico: medico })})
-    .addAction(
-    async (ctx, { state }) => {
+        await state.update({ medico: medico })
     const especialidad = 'Cirugia'; // Tu dato
-    await state.update({ especialidad: especialidad })})
+        await state.update({ especialidad: especialidad })
+    const msj = mensage(); // Tu dato
+        await state.update({ msj: msj })})
     .addAction(
     async (ctx, { gotoFlow }) => {
-// Ir automáticamente al siguiente flujo (flow2)
-    return gotoFlow(flowDatosMS1);
+        return gotoFlow(flowDatosObra);
     })
 
 const flowDrArmendariz = addKeyword(['4','armendariz'])
 .addAction(
     async (ctx, { state }) => {
     const medico = 'Dr. Armendariz'; // Tu dato
-    await state.update({ medico: medico })})
-    .addAction(
-    async (ctx, { state }) => {
+        await state.update({ medico: medico })
     const especialidad = 'Cirugia'; // Tu dato
-    await state.update({ especialidad: especialidad })})
+        await state.update({ especialidad: especialidad })
+    const msj = mensage(); // Tu dato
+        await state.update({ msj: msj })})
     .addAction(
     async (ctx, { gotoFlow }) => {
-// Ir automáticamente al siguiente flujo (flow2)
-    return gotoFlow(flowDatosMS1);
+    return gotoFlow(flowDatosObra);
     })
 
 const flowDrBubilllo = addKeyword(['bubillo','5'])
 .addAction(
     async (ctx, { state }) => {
     const medico = 'Dra. Bubillo'; // Tu dato
-    await state.update({ medico: medico })})
-    .addAction(
-    async (ctx, { state }) => {
+        await state.update({ medico: medico })
     const especialidad = 'Cirugia'; // Tu dato
-    await state.update({ especialidad: especialidad })})
+        await state.update({ especialidad: especialidad })
+    const msj = mensage(); // Tu dato
+        await state.update({ msj: msj })})
     .addAction(
     async (ctx, { gotoFlow }) => {
-// Ir automáticamente al siguiente flujo (flow2)
-    return gotoFlow(flowDatosMS1);
+        return gotoFlow(flowDatosObra);
     })
 
 const flowDrMichelis = addKeyword(['michelis','6'])
 .addAction(
     async (ctx, { state }) => {
     const medico = 'Dr. De Michelis'; // Tu dato
-    await state.update({ medico: medico })})
-    .addAction(
-    async (ctx, { state }) => {
+        await state.update({ medico: medico })
     const especialidad = 'Cirugia'; // Tu dato
-    await state.update({ especialidad: especialidad })})
+        await state.update({ especialidad: especialidad })
+    const msj = mensage(); // Tu dato
+        await state.update({ msj: msj })})
     .addAction(
     async (ctx, { gotoFlow }) => {
-// Ir automáticamente al siguiente flujo (flow2)
-    return gotoFlow(flowDatosMS1);
+        return gotoFlow(flowDatosObra);
     })
 
 const flowDrMiranda = addKeyword(['miranda','7'])
 .addAction(
     async (ctx, { state }) => {
     const medico = 'Dr Miranda'; // Tu dato
-    await state.update({ medico: medico })})
-    .addAction(
-    async (ctx, { state }) => {
+        await state.update({ medico: medico })
     const especialidad = 'Cirugia'; // Tu dato
-    await state.update({ especialidad: especialidad })})
+        await state.update({ especialidad: especialidad })
+    const msj = mensage(); // Tu dato
+        await state.update({ msj: msj })})
     .addAction(
     async (ctx, { gotoFlow }) => {
-// Ir automáticamente al siguiente flujo (flow2)
-    return gotoFlow(flowDatosMS1);
+        return gotoFlow(flowDatosObra);
     })
 
 const flowCirugiaIntervencion = addKeyword(['2', 'no']).addAnswer(['Por favor selecione el medico.'])
@@ -309,16 +369,15 @@ const flowCirugiaIntervencion = addKeyword(['2', 'no']).addAnswer(['Por favor se
 const flowCirugiaCuracion = addKeyword(['1','si','curacion'])
 .addAction(
     async (ctx, { state }) => {
-    const medico = 'No asignado'; // Tu dato
-    await state.update({ medico: medico })})
-    .addAction(
-    async (ctx, { state }) => {
-    const especialidad = 'Curaciones de cirugia'; // Tu dato
-    await state.update({ especialidad: especialidad })})
+    const medico = 'No asignado'; // Medico selecionado
+        await state.update({ medico: medico })
+    const especialidad = 'Curaciones de cirugia'; // Especialidad elejida
+        await state.update({ especialidad: especialidad })
+    const msj = mensage(); // Mensaje
+        await state.update({ msj: msj })})
     .addAction(
     async (ctx, { gotoFlow }) => {
-// Ir automáticamente al siguiente flujo (flow2)
-    return gotoFlow(flowDatosMS1);
+        return gotoFlow(flowDatosObra);
     })
 
 
@@ -340,15 +399,14 @@ const flowDrPierini = addKeyword(['pierini','1'])
 .addAction(
     async (ctx, { state }) => {
     const medico = 'Dra. Pierini'; // Tu dato
-    await state.update({ medico: medico })})
-    .addAction(
-    async (ctx, { state }) => {
+        await state.update({ medico: medico })
     const especialidad = 'Dermatologia'; // Tu dato
-    await state.update({ especialidad: especialidad })})
+        await state.update({ especialidad: especialidad })
+    const msj = mensage(); // Tu dato
+        await state.update({ msj: msj })})
     .addAction(
     async (ctx, { gotoFlow }) => {
-// Ir automáticamente al siguiente flujo (flow2)
-    return gotoFlow(flowDatosMS1);
+        return gotoFlow(flowDatosObra);
     })
 
 const flowDermatologia = addKeyword(['4', 'dermatologia']).addAnswer(['Por favor selecione el medico.'])
@@ -365,23 +423,21 @@ const flowDrFeretta = addKeyword(['feretta','1'])
 .addAction(
     async (ctx, { state }) => {
     const medico = 'Dra. Feretta'; // Tu dato
-    await state.update({ medico: medico })})
-    .addAction(
-    async (ctx, { state }) => {
+        await state.update({ medico: medico })
     const especialidad = 'Endocrinologia'; // Tu dato
-    await state.update({ especialidad: especialidad })})
+        await state.update({ especialidad: especialidad })
+    const msj = mensage3(); // Tu dato
+        await state.update({ msj: msj })})
     .addAction(
     async (ctx, { gotoFlow }) => {
-// Ir automáticamente al siguiente flujo (flow2)
-    return gotoFlow(flowDatosMS3);
+        return gotoFlow(flowDatosObra);
     })
 
 const flowEndocrinologia = addKeyword(['5', 'endocrinologia']).addAnswer(['Por favor selecione el medico'])
     .addAnswer([
         '*0*.- Retornar al menu inicial',
         '*1*.- Dra. Feretta',
-   //     'Medico 2',
-   //     'Medico 3'
+
     ],
     null,
     null,
@@ -393,15 +449,14 @@ const flowTratamientoL = addKeyword(['tratamiento','1'])
 .addAction(
     async (ctx, { state }) => {
     const medico = 'Dra. Feretta'; // Tu dato
-    await state.update({ medico: medico })})
-    .addAction(
-    async (ctx, { state }) => {
+        await state.update({ medico: medico })
     const especialidad = 'Endocrinologia'; // Tu dato
-    await state.update({ especialidad: especialidad })})
+        await state.update({ especialidad: especialidad })
+    const msj = mensage4(); // Tu dato
+        await state.update({ msj: msj })})
     .addAction(
     async (ctx, { gotoFlow }) => {
-// Ir automáticamente al siguiente flujo (flow2)
-    return gotoFlow(flowDatosMS4);
+        return gotoFlow(flowDatosFoto);
     })
 
 const flowOEA = addKeyword(['oea','2']).addAnswer([
@@ -420,8 +475,19 @@ const flowOEA = addKeyword(['oea','2']).addAnswer([
     '*(recuerde que el día de la atención, deberá concurrir con la libreta sanitaria)*'
 ])
 
-const flowEstudiosA = addKeyword(['estudios','3']).addAnswer([
-    mensage4()])
+const flowEstudiosA = addKeyword(['estudios','3'])
+.addAction(
+    async (ctx, { state }) => {
+    const medico = 'No asignado'; // Tu dato
+        await state.update({ medico: medico })
+    const especialidad = 'Fonoaudiologia'; // Tu dato
+        await state.update({ especialidad: especialidad })
+    const msj = mensage4(); // Tu dato
+        await state.update({ msj: msj })})
+    .addAction(
+    async (ctx, { gotoFlow }) => {
+        return gotoFlow(flowDatosFoto);
+    })
 
 
 const flowFonoaudiologia = addKeyword(['6', 'fonoaudiologia']).addAnswer(['Por favor selecione el estudio.'])
@@ -436,18 +502,61 @@ const flowFonoaudiologia = addKeyword(['6', 'fonoaudiologia']).addAnswer(['Por f
 
 // GASTROENTEROLOGIA
 
-const flowDrDelNegro = addKeyword(['1','negro']).addAnswer([
-    mensage()])
+const flowDrDelNegro = addKeyword(['1','negro'])
+.addAction(
+    async (ctx, { state }) => {
+    const medico = 'Dr. Del Negro'; // Tu dato
+        await state.update({ medico: medico })
+    const especialidad = 'Gastroenterologia'; // Tu dato
+        await state.update({ especialidad: especialidad })
+    const msj = mensage(); // Tu dato
+        await state.update({ msj: msj })})
+    .addAction(
+    async (ctx, { gotoFlow }) => {
+        return gotoFlow(flowDatosObra);
+    })
 
-const flowDrWallaceG = addKeyword(['2','wallace']).addAnswer([
-    mensage()])
+const flowDrWallaceG = addKeyword(['2','wallace'])
+.addAction(
+    async (ctx, { state }) => {
+    const medico = 'Dr. Wallace'; // Tu dato
+        await state.update({ medico: medico })
+    const especialidad = 'Gastroenterologia'; // Tu dato
+        await state.update({ especialidad: especialidad })
+    const msj = mensage(); // Tu dato
+        await state.update({ msj: msj })})
+    .addAction(
+    async (ctx, { gotoFlow }) => {
+        return gotoFlow(flowDatosFoto);
+    })
 
-const flowDrLucia = addKeyword(['3','lucia']).addAnswer([
-    mensage()])
+const flowDrLucia = addKeyword(['3','lucia'])
+.addAction(
+    async (ctx, { state }) => {
+    const medico = 'Dr. De Lucia'; // Tu dato
+        await state.update({ medico: medico })
+    const especialidad = 'Gastroenterologia'; // Tu dato
+        await state.update({ especialidad: especialidad })
+    const msj = mensage(); // Tu dato
+        await state.update({ msj: msj })})
+    .addAction(
+    async (ctx, { gotoFlow }) => {
+        return gotoFlow(flowDatosFoto);
+    })
 
-const flowDrFacciutto = addKeyword(['4','facciutto']).addAnswer([
-    mensage()])
-
+const flowDrFacciutto = addKeyword(['4','facciutto'])
+.addAction(
+    async (ctx, { state }) => {
+    const medico = 'Dr. Facciutto'; // Tu dato
+        await state.update({ medico: medico })
+    const especialidad = 'Gastroenterologia'; // Tu dato
+        await state.update({ especialidad: especialidad })
+    const msj = mensage(); // Tu dato
+        await state.update({ msj: msj })})
+    .addAction(
+    async (ctx, { gotoFlow }) => {
+        return gotoFlow(flowDatosFoto);
+    })
 const flowGastroenterologia = addKeyword(['7', 'gastro']).addAnswer(['Por favor selecione el medico.'])
     .addAnswer([
         '*0*.- Retornar al menu inicial',
@@ -461,23 +570,87 @@ const flowGastroenterologia = addKeyword(['7', 'gastro']).addAnswer(['Por favor 
 
 // GINECOLOGIA
 
-const flowDrGrimoldi = addKeyword(['1','grimoldi']).addAnswer([
-    mensage()])
+const flowDrGrimoldi = addKeyword(['1','grimoldi'])
+.addAction(
+    async (ctx, { state }) => {
+    const medico = 'Dra. Grimoldi'; // Tu dato
+        await state.update({ medico: medico })
+    const especialidad = 'Ginecologia'; // Tu dato
+        await state.update({ especialidad: especialidad })
+    const msj = mensage(); // Tu dato
+        await state.update({ msj: msj })})
+    .addAction(
+    async (ctx, { gotoFlow }) => {
+        return gotoFlow(flowDatosObra);
+    })
 
-const flowDrEstevez = addKeyword(['2','estevez']).addAnswer([
-    mensage()])
+const flowDrEstevez = addKeyword(['2','estevez']).addAction(
+    async (ctx, { state }) => {
+    const medico = 'Dr. Estevez'; // Tu dato
+        await state.update({ medico: medico })
+    const especialidad = 'Ginecologia'; // Tu dato
+        await state.update({ especialidad: especialidad })
+    const msj = mensage(); // Tu dato
+        await state.update({ msj: msj })})
+    .addAction(
+    async (ctx, { gotoFlow }) => {
+        return gotoFlow(flowDatosObra);
+    })
 
-const flowDrLevitan = addKeyword(['3','levitan']).addAnswer([
-    mensage()])
+const flowDrLevitan = addKeyword(['3','levitan']).addAction(
+    async (ctx, { state }) => {
+    const medico = 'Dra. Levitan'; // Tu dato
+        await state.update({ medico: medico })
+    const especialidad = 'Ginecologia'; // Tu dato
+        await state.update({ especialidad: especialidad })
+    const msj = mensage(); // Tu dato
+        await state.update({ msj: msj })})
+    .addAction(
+    async (ctx, { gotoFlow }) => {
+        return gotoFlow(flowDatosObra);
+    })
 
-const flowDrMartinez = addKeyword(['4','martinez']).addAnswer([
-    mensage()])
+const flowDrMartinez = addKeyword(['4','martinez'])
+.addAction(
+    async (ctx, { state }) => {
+    const medico = 'Dr. Martinez'; // Tu dato
+        await state.update({ medico: medico })
+    const especialidad = 'Ginecologia'; // Tu dato
+        await state.update({ especialidad: especialidad })
+    const msj = mensage(); // Tu dato
+        await state.update({ msj: msj })})
+    .addAction(
+    async (ctx, { gotoFlow }) => {
+        return gotoFlow(flowDatosObra);
+    })
 
-const flowDrPiyero = addKeyword(['5','piyero']).addAnswer([
-    mensage()])
+const flowDrPiyero = addKeyword(['5','piyero'])
+.addAction(
+    async (ctx, { state }) => {
+    const medico = 'Dr. Piyero'; // Tu dato
+        await state.update({ medico: medico })
+    const especialidad = 'Ginecologia'; // Tu dato
+        await state.update({ especialidad: especialidad })
+    const msj = mensage(); // Tu dato
+        await state.update({ msj: msj })})
+    .addAction(
+    async (ctx, { gotoFlow }) => {
+        return gotoFlow(flowDatosObra);
+    })
 
-const flowDrArciprete = addKeyword(['6','arciprete']).addAnswer([
-    mensage()])
+const flowDrArciprete = addKeyword(['6','arciprete'])
+.addAction(
+    async (ctx, { state }) => {
+    const medico = 'Dr. Arciprete'; // Tu dato
+        await state.update({ medico: medico })
+    const especialidad = 'Ginecologia'; // Tu dato
+        await state.update({ especialidad: especialidad })
+    const msj = mensage(); // Tu dato
+        await state.update({ msj: msj })})
+    .addAction(
+    async (ctx, { gotoFlow }) => {
+        return gotoFlow(flowDatosObra);
+    })
 
 const flowGinecologia = addKeyword(['8','ginecologia']).addAnswer(['Por favor selecione el medico.'])
     .addAnswer([
@@ -496,8 +669,19 @@ const flowGinecologia = addKeyword(['8','ginecologia']).addAnswer(['Por favor se
 
 // HEMATOLOGIA
 
-const flowDrBarbieris = addKeyword(['1','barbieris']).addAnswer([
-    mensage()])
+const flowDrBarbieris = addKeyword(['1','barbieris'])
+.addAction(
+    async (ctx, { state }) => {
+    const medico = 'Dra. Barbieris'; // Tu dato
+        await state.update({ medico: medico })
+    const especialidad = 'Hematologia'; // Tu dato
+        await state.update({ especialidad: especialidad })
+    const msj = mensage(); // Tu dato
+        await state.update({ msj: msj })})
+    .addAction(
+    async (ctx, { gotoFlow }) => {
+        return gotoFlow(flowDatosObra);
+    })
 
 const flowHematologia = addKeyword(['9', 'hematologia']).addAnswer(['Por favor selecione el medico.'])
     .addAnswer([
@@ -514,14 +698,46 @@ const flowHematologia = addKeyword(['9', 'hematologia']).addAnswer(['Por favor s
 
 // NEUROCIRUGIA
 
-const flowDrGomez = addKeyword(['1','gomez']).addAnswer([
-    mensage3()])
+const flowDrGomez = addKeyword(['1','gomez'])
+.addAction(
+    async (ctx, { state }) => {
+    const medico = 'Dr. Gomez'; // Tu dato
+        await state.update({ medico: medico })
+    const especialidad = 'Neurocirugia'; // Tu dato
+        await state.update({ especialidad: especialidad })
+    const msj = mensage3(); // Tu dato
+        await state.update({ msj: msj })})
+    .addAction(
+    async (ctx, { gotoFlow }) => {
+        return gotoFlow(flowDatosObra);
+    })
 
-const flowDrGuerra = addKeyword(['2','gurra']).addAnswer([
-    mensage3()])    
-
-const flowDrCondori = addKeyword(['3','condori']).addAnswer([
-    mensage3()])
+const flowDrGuerra = addKeyword(['2','gurra'])
+.addAction(
+    async (ctx, { state }) => {
+    const medico = 'Dra. Guerra'; // Tu dato
+        await state.update({ medico: medico })
+    const especialidad = 'Neurocirugia'; // Tu dato
+        await state.update({ especialidad: especialidad })
+    const msj = mensage3(); // Tu dato
+        await state.update({ msj: msj })})
+    .addAction(
+    async (ctx, { gotoFlow }) => {
+        return gotoFlow(flowDatosObra);
+    })
+const flowDrCondori = addKeyword(['3','condori'])
+.addAction(
+    async (ctx, { state }) => {
+    const medico = 'Dr. Condori'; // Tu dato
+        await state.update({ medico: medico })
+    const especialidad = 'Neurocirugia'; // Tu dato
+        await state.update({ especialidad: especialidad })
+    const msj = mensage3(); // Tu dato
+        await state.update({ msj: msj })})
+    .addAction(
+    async (ctx, { gotoFlow }) => {
+        return gotoFlow(flowDatosObra);
+    })
 
 const flowNeurocirugia = addKeyword(['10','neurocirugia']).addAnswer(['Por favor selecione el medico.'])
     .addAnswer([
@@ -536,11 +752,33 @@ const flowNeurocirugia = addKeyword(['10','neurocirugia']).addAnswer(['Por favor
 
 // OFTALMOLOGIA
 
-const flowDrGiustozzi = addKeyword(['1','giustozzi']).addAnswer([
-    mensage()])
+const flowDrGiustozzi = addKeyword(['1','giustozzi'])
+.addAction(
+    async (ctx, { state }) => {
+    const medico = 'Dra. Giustozzi'; // Tu dato
+        await state.update({ medico: medico })
+    const especialidad = 'Oftalmologia'; // Tu dato
+        await state.update({ especialidad: especialidad })
+    const msj = mensage(); // Tu dato
+        await state.update({ msj: msj })})
+    .addAction(
+    async (ctx, { gotoFlow }) => {
+        return gotoFlow(flowDatosObra);
+    })
 
-const flowDrZanovello = addKeyword(['2','zanoveloo']).addAnswer([
-    mensage()])
+const flowDrZanovello = addKeyword(['2','zanoveloo'])
+.addAction(
+    async (ctx, { state }) => {
+    const medico = 'Dr Zanovello'; // Tu dato
+        await state.update({ medico: medico })
+    const especialidad = 'Oftalmologia'; // Tu dato
+        await state.update({ especialidad: especialidad })
+    const msj = mensage(); // Tu dato
+        await state.update({ msj: msj })})
+    .addAction(
+    async (ctx, { gotoFlow }) => {
+        return gotoFlow(flowDatosObra);
+    })
 
 const flowOftalmologia = addKeyword(['11','oftalmologia'], {sensitive:true}).addAnswer(['Por favor selecione el medico.'])
     .addAnswer([
@@ -554,8 +792,19 @@ const flowOftalmologia = addKeyword(['11','oftalmologia'], {sensitive:true}).add
 
 // ONCOLOGIA
 
-const flowDrBozzano = addKeyword(['1','bozano']).addAnswer([
-    mensage3()])
+const flowDrBozzano = addKeyword(['1','bozano'])
+.addAction(
+    async (ctx, { state }) => {
+    const medico = 'Dr. Bozzano'; // Tu dato
+        await state.update({ medico: medico })
+    const especialidad = 'Oncologia'; // Tu dato
+        await state.update({ especialidad: especialidad })
+    const msj = mensage(); // Tu dato
+        await state.update({ msj: msj })})
+    .addAction(
+    async (ctx, { gotoFlow }) => {
+        return gotoFlow(flowDatosObra);
+    })
 
 const flowOncologia = addKeyword(['12', 'oncologia']).addAnswer(['Por favor selecione el medico.'])
     .addAnswer([
@@ -569,11 +818,33 @@ const flowOncologia = addKeyword(['12', 'oncologia']).addAnswer(['Por favor sele
 
 // PSIQUIATRIA
 
-const flowDrEcheverria = addKeyword(['1','echeverria']).addAnswer([
-    mensage3()])
+const flowDrEcheverria = addKeyword(['1','echeverria'])
+.addAction(
+    async (ctx, { state }) => {
+    const medico = 'Dra. Echeverria'; // Tu dato
+        await state.update({ medico: medico })
+    const especialidad = 'Psiquiatria'; // Tu dato
+        await state.update({ especialidad: especialidad })
+    const msj = mensage3(); // Tu dato
+        await state.update({ msj: msj })})
+    .addAction(
+    async (ctx, { gotoFlow }) => {
+        return gotoFlow(flowDatosObra);
+    })
 
-const flowDrGiuli = addKeyword(['2','giuli']).addAnswer([
-    mensage3()])
+const flowDrGiuli = addKeyword(['2','giuli'])
+.addAction(
+    async (ctx, { state }) => {
+    const medico = 'Dra. Di Giuli'; // Tu dato
+        await state.update({ medico: medico })
+    const especialidad = 'Psiquiatria'; // Tu dato
+        await state.update({ especialidad: especialidad })
+    const msj = mensage3(); // Tu dato
+        await state.update({ msj: msj })})
+    .addAction(
+    async (ctx, { gotoFlow }) => {
+        return gotoFlow(flowDatosObra);
+    })
 
 const flowPsiquiatria = addKeyword(['13', 'psiquiatria']).addAnswer(['Por favor selecione el medico.'])
     .addAnswer([
@@ -587,17 +858,61 @@ const flowPsiquiatria = addKeyword(['13', 'psiquiatria']).addAnswer(['Por favor 
 
 // TRAUMATOLOGIA
 
-const flowDrAcuña = addKeyword(['1','acuña']).addAnswer([
-    mensage()])
+const flowDrAcuña = addKeyword(['1','acuña'])
+.addAction(
+    async (ctx, { state }) => {
+    const medico = 'Dr. Acuña'; // Tu dato
+        await state.update({ medico: medico })
+    const especialidad = 'Traumatologia'; // Tu dato
+        await state.update({ especialidad: especialidad })
+    const msj = mensage(); // Tu dato
+        await state.update({ msj: msj })})
+    .addAction(
+    async (ctx, { gotoFlow }) => {
+        return gotoFlow(flowDatosObra);
+    })
 
-const flowDrCastellani = addKeyword(['2','castellani']).addAnswer([
-    mensage()])  
+const flowDrCastellani = addKeyword(['2','castellani'])
+.addAction(
+    async (ctx, { state }) => {
+    const medico = 'Dr. Castellani'; // Tu dato
+        await state.update({ medico: medico })
+    const especialidad = 'Traumatologia'; // Tu dato
+        await state.update({ especialidad: especialidad })
+    const msj = mensage(); // Tu dato
+        await state.update({ msj: msj })})
+    .addAction(
+    async (ctx, { gotoFlow }) => {
+        return gotoFlow(flowDatosObra);
+    })
 
-const flowDrRimmaudo = addKeyword(['3','rimmaudo']).addAnswer([
-    mensage()])
+const flowDrRimmaudo = addKeyword(['3','rimmaudo'])
+.addAction(
+    async (ctx, { state }) => {
+    const medico = 'Dr. Rimmaudo'; // Tu dato
+        await state.update({ medico: medico })
+    const especialidad = 'Traumatologia'; // Tu dato
+        await state.update({ especialidad: especialidad })
+    const msj = mensage(); // Tu dato
+        await state.update({ msj: msj })})
+    .addAction(
+    async (ctx, { gotoFlow }) => {
+        return gotoFlow(flowDatosObra);
+    })
 
-const flowDrGallego = addKeyword(['4','gallego']).addAnswer([
-    mensage()])
+const flowDrGallego = addKeyword(['4','gallego'])
+.addAction(
+    async (ctx, { state }) => {
+    const medico = ' Dra. Gallego'; // Tu dato
+        await state.update({ medico: medico })
+    const especialidad = 'Traumatologia'; // Tu dato
+        await state.update({ especialidad: especialidad })
+    const msj = mensage(); // Tu dato
+        await state.update({ msj: msj })})
+    .addAction(
+    async (ctx, { gotoFlow }) => {
+        return gotoFlow(flowDatosObra);
+    })
 
 const flowTraumatologia = addKeyword(['14', 'traumatologia']).addAnswer(['Por favor selecione el medico.'])
     .addAnswer([
@@ -614,9 +929,19 @@ const flowTraumatologia = addKeyword(['14', 'traumatologia']).addAnswer(['Por fa
 // PEDIATRIA
 
 
-const flowPediatriaSano = addKeyword(['1', 'si']).addAnswer([
-    mensage3()
-])
+const flowPediatriaSano = addKeyword(['1', 'si'])
+.addAction(
+    async (ctx, { state }) => {
+    const medico = 'Sin asignar'; // Tu dato
+        await state.update({ medico: medico })
+    const especialidad = 'Pediatria'; // Tu dato
+        await state.update({ especialidad: especialidad })
+    const msj = mensage3(); // Tu dato
+        await state.update({ msj: msj })})
+    .addAction(
+    async (ctx, { gotoFlow }) => {
+        return gotoFlow(flowDatosObra);
+    })
 
 const flowPediatriaNoSano = addKeyword(['2', 'no']).addAnswer(['*Turno de manera presencial de 8:30 hs a 11:30 hs.'])
 
@@ -634,11 +959,33 @@ const flowPediatria = addKeyword(['15', 'pediatria']).addAnswer(['Por favor sele
 
 // UROLOGIA
 
-const flowDrGuaragnini = addKeyword(['1','guaragnini']).addAnswer([
-    mensage()])
+const flowDrGuaragnini = addKeyword(['1','guaragnini'])
+.addAction(
+    async (ctx, { state }) => {
+    const medico = 'Dr. Guaragnini'; // Tu dato
+        await state.update({ medico: medico })
+    const especialidad = 'Urologia'; // Tu dato
+        await state.update({ especialidad: especialidad })
+    const msj = mensage(); // Tu dato
+        await state.update({ msj: msj })})
+    .addAction(
+    async (ctx, { gotoFlow }) => {
+        return gotoFlow(flowDatosObra);
+    })
 
-const flowDrMassaccesi = addKeyword(['2','massaccesi']).addAnswer([
-    mensage()])
+const flowDrMassaccesi = addKeyword(['2','massaccesi'])
+.addAction(
+    async (ctx, { state }) => {
+    const medico = 'Dr. Massaccesi'; // Tu dato
+        await state.update({ medico: medico })
+    const especialidad = 'Urologia'; // Tu dato
+        await state.update({ especialidad: especialidad })
+    const msj = mensage(); // Tu dato
+        await state.update({ msj: msj })})
+    .addAction(
+    async (ctx, { gotoFlow }) => {
+        return gotoFlow(flowDatosObra);
+    })
 
 const flowUrologia = addKeyword(['16', 'urologia']).addAnswer(['Por favor selecione el medico.'])
     .addAnswer([
@@ -652,14 +999,44 @@ const flowUrologia = addKeyword(['16', 'urologia']).addAnswer(['Por favor seleci
 
 // NUTRICION
 
-const flowLicPompozzi = addKeyword(['1','pompozzi']).addAnswer([
-    mensage()])
+const flowLicPompozzi = addKeyword(['1','pompozzi']).addAction(
+    async (ctx, { state }) => {
+    const medico = 'Lic. Pompozzi'; // Tu dato
+        await state.update({ medico: medico })
+    const especialidad = 'Nutricion'; // Tu dato
+        await state.update({ especialidad: especialidad })
+    const msj = mensage(); // Tu dato
+        await state.update({ msj: msj })})
+    .addAction(
+    async (ctx, { gotoFlow }) => {
+        return gotoFlow(flowDatosObra);
+    })
 
-const flowLicDalto = addKeyword(['2','dalto']).addAnswer([
-        mensage()])
+const flowLicDalto = addKeyword(['2','dalto']).addAction(
+    async (ctx, { state }) => {
+    const medico = 'Lic. Dalto'; // Tu dato
+        await state.update({ medico: medico })
+    const especialidad = 'Nutricion'; // Tu dato
+        await state.update({ especialidad: especialidad })
+    const msj = mensage(); // Tu dato
+        await state.update({ msj: msj })})
+    .addAction(
+    async (ctx, { gotoFlow }) => {
+        return gotoFlow(flowDatosObra);
+    })
 
-const flowLicEstevez = addKeyword(['3','estevez']).addAnswer([
-            mensage()])
+const flowLicEstevez = addKeyword(['3','estevez']).addAction(
+    async (ctx, { state }) => {
+    const medico = 'Lic. Estevez'; // Tu dato
+        await state.update({ medico: medico })
+    const especialidad = 'Nutricion'; // Tu dato
+        await state.update({ especialidad: especialidad })
+    const msj = mensage(); // Tu dato
+        await state.update({ msj: msj })})
+    .addAction(
+    async (ctx, { gotoFlow }) => {
+        return gotoFlow(flowDatosObra);
+    })
 
 const flowNutricion = addKeyword(['17', 'nutricion']).addAnswer(['Por favor selecione el medico.'])
     .addAnswer([
@@ -673,11 +1050,44 @@ const flowNutricion = addKeyword(['17', 'nutricion']).addAnswer(['Por favor sele
 
 // ODONTOLOGIA
 
-const flowOdonNiños = addKeyword(['2', 'niños']).addAnswer([mensage3()])
+const flowOdonNiños = addKeyword(['2', 'niños']).addAction(
+    async (ctx, { state }) => {
+    const medico = 'Sin asignar'; // Tu dato
+        await state.update({ medico: medico })
+    const especialidad = 'Pediatria'; // Tu dato
+        await state.update({ especialidad: especialidad })
+    const msj = mensage3(); // Tu dato
+        await state.update({ msj: msj })})
+    .addAction(
+    async (ctx, { gotoFlow }) => {
+        return gotoFlow(flowDatosObra);
+    })
 
-const flowOdonAdulosMañana = addKeyword(['1', 'mañana']).addAnswer([mensage3()])
+const flowOdonAdulosMañana = addKeyword(['1', 'mañana']).addAction(
+    async (ctx, { state }) => {
+    const medico = 'Sin asignar'; // Tu dato
+        await state.update({ medico: medico })
+    const especialidad = 'Pediatria'; // Tu dato
+        await state.update({ especialidad: especialidad })
+    const msj = mensage3(); // Tu dato
+        await state.update({ msj: msj })})
+    .addAction(
+    async (ctx, { gotoFlow }) => {
+        return gotoFlow(flowDatosObra);
+    })
 
-const flowOdonAdultosTarde = addKeyword(['2', 'tarde']).addAnswer([mensage3()])
+const flowOdonAdultosTarde = addKeyword(['2', 'tarde']).addAction(
+    async (ctx, { state }) => {
+    const medico = 'Sin asignar'; // Tu dato
+        await state.update({ medico: medico })
+    const especialidad = 'Pediatria'; // Tu dato
+        await state.update({ especialidad: especialidad })
+    const msj = mensage3(); // Tu dato
+        await state.update({ msj: msj })})
+    .addAction(
+    async (ctx, { gotoFlow }) => {
+        return gotoFlow(flowDatosObra);
+    })
 
 const flowOdonAdultos = addKeyword(['1', 'adultos']).addAnswer(['Porfavaor selecione el turno:',
     '',
@@ -702,8 +1112,18 @@ const flowOdontologia = addKeyword(['18','odontologia'], {sensitive:true}).addAn
 
 // FISIATRIA
 
-const flowDrArocena = addKeyword(['1','arocena']).addAnswer([
-    mensage()])
+const flowDrArocena = addKeyword(['1','arocena']).addAction(
+    async (ctx, { state }) => {
+    const medico = 'Dra. Arocena'; // Tu dato
+        await state.update({ medico: medico })
+    const especialidad = 'Fisiatria'; // Tu dato
+        await state.update({ especialidad: especialidad })
+    const msj = mensage(); // Tu dato
+        await state.update({ msj: msj })})
+    .addAction(
+    async (ctx, { gotoFlow }) => {
+        return gotoFlow(flowDatosObra);
+    })
 
 const flowFisiatria = addKeyword(['19','fisiatria']).addAnswer(['Por favor selecione el medico.'])
     .addAnswer([
@@ -718,8 +1138,18 @@ const flowFisiatria = addKeyword(['19','fisiatria']).addAnswer(['Por favor selec
 
 // NEUMOLOGIA
 
-const flowDrSpinelli = addKeyword(['1','arocena']).addAnswer([
-    mensage()]) 
+const flowDrSpinelli = addKeyword(['1','Spinelli']).addAction(
+    async (ctx, { state }) => {
+    const medico = 'Dra. Spinelli'; // Tu dato
+        await state.update({ medico: medico })
+    const especialidad = 'Neumologia'; // Tu dato
+        await state.update({ especialidad: especialidad })
+    const msj = mensage(); // Tu dato
+        await state.update({ msj: msj })})
+    .addAction(
+    async (ctx, { gotoFlow }) => {
+        return gotoFlow(flowDatosObra);
+    })
 
 const flowNeumologia = addKeyword(['20', 'neumologia']).addAnswer(['Por favor selecione el medico.'])
     .addAnswer([
@@ -733,20 +1163,70 @@ const flowNeumologia = addKeyword(['20', 'neumologia']).addAnswer(['Por favor se
 
 // OBSTRETICIA
 
-const flowDrArias = addKeyword(['1','arias']).addAnswer([
-    mensage()])
+const flowDrArias = addKeyword(['1','arias']).addAction(
+    async (ctx, { state }) => {
+    const medico = 'Arias'; // Tu dato
+        await state.update({ medico: medico })
+    const especialidad = 'Obstreticia'; // Tu dato
+        await state.update({ especialidad: especialidad })
+    const msj = mensage(); // Tu dato
+        await state.update({ msj: msj })})
+    .addAction(
+    async (ctx, { gotoFlow }) => {
+        return gotoFlow(flowDatosObra);
+    })
 
-const flowDrLemme = addKeyword(['2','lemme']).addAnswer([
-    mensage()])
+const flowDrLemme = addKeyword(['2','lemme']).addAction(
+    async (ctx, { state }) => {
+    const medico = 'Lemme'; // Tu dato
+        await state.update({ medico: medico })
+    const especialidad = 'Obstreticia'; // Tu dato
+        await state.update({ especialidad: especialidad })
+    const msj = mensage(); // Tu dato
+        await state.update({ msj: msj })})
+    .addAction(
+    async (ctx, { gotoFlow }) => {
+        return gotoFlow(flowDatosObra);
+    })
 
-const flowDrTenaglia = addKeyword(['3','tenaglia']).addAnswer([
-    mensage()])
+const flowDrTenaglia = addKeyword(['3','tenaglia']).addAction(
+    async (ctx, { state }) => {
+    const medico = 'Tenaglia'; // Tu dato
+        await state.update({ medico: medico })
+    const especialidad = 'Obstreticia'; // Tu dato
+        await state.update({ especialidad: especialidad })
+    const msj = mensage(); // Tu dato
+        await state.update({ msj: msj })})
+    .addAction(
+    async (ctx, { gotoFlow }) => {
+        return gotoFlow(flowDatosObra);
+    })
 
-const flowDrOrtiz = addKeyword(['4','ortiz']).addAnswer([
-    mensage()])
+const flowDrOrtiz = addKeyword(['4','ortiz']).addAction(
+    async (ctx, { state }) => {
+    const medico = 'Gil Ortiz'; // Tu dato
+        await state.update({ medico: medico })
+    const especialidad = 'Obstreticia'; // Tu dato
+        await state.update({ especialidad: especialidad })
+    const msj = mensage(); // Tu dato
+        await state.update({ msj: msj })})
+    .addAction(
+    async (ctx, { gotoFlow }) => {
+        return gotoFlow(flowDatosObra);
+    })
 
-const flowDrSerrani = addKeyword(['5','serrani']).addAnswer([
-     mensage()])
+const flowDrSerrani = addKeyword(['5','serrani']).addAction(
+    async (ctx, { state }) => {
+    const medico = 'Serrani'; // Tu dato
+        await state.update({ medico: medico })
+    const especialidad = 'Obstreticia'; // Tu dato
+        await state.update({ especialidad: especialidad })
+    const msj = mensage(); // Tu dato
+        await state.update({ msj: msj })})
+    .addAction(
+    async (ctx, { gotoFlow }) => {
+        return gotoFlow(flowDatosObra);
+    })
 
 const flowObstreticia = addKeyword(['21', 'obstreticia']).addAnswer(['Por favor selecione el medico.'])
     .addAnswer([
@@ -763,8 +1243,18 @@ const flowObstreticia = addKeyword(['21', 'obstreticia']).addAnswer(['Por favor 
 
 // OTORRINONARINGOLOGIA
 
-const flowDrMazzei = addKeyword(['1','mazzei']).addAnswer([
-    mensage()])
+const flowDrMazzei = addKeyword(['1','mazzei']).addAction(
+    async (ctx, { state }) => {
+    const medico = 'Dr. Mazzei'; // Tu dato
+        await state.update({ medico: medico })
+    const especialidad = 'Otorrinonaringologia'; // Tu dato
+        await state.update({ especialidad: especialidad })
+    const msj = mensage(); // Tu dato
+        await state.update({ msj: msj })})
+    .addAction(
+    async (ctx, { gotoFlow }) => {
+        return gotoFlow(flowDatosObra);
+    })
 
 const flowOtorrino = addKeyword(['22', 'otorrino']).addAnswer(['Por favor selecione el medico.'])
     .addAnswer([
@@ -779,8 +1269,18 @@ const flowOtorrino = addKeyword(['22', 'otorrino']).addAnswer(['Por favor seleci
 
 // NEFROLOGIA
 
-const flowDrCarriquiri = addKeyword(['1','carriquiri']).addAnswer([
-    mensage()])
+const flowDrCarriquiri = addKeyword(['1','carriquiri']).addAction(
+    async (ctx, { state }) => {
+    const medico = 'Dr. Carriquiri'; // Tu dato
+        await state.update({ medico: medico })
+    const especialidad = 'Nefrologia'; // Tu dato
+        await state.update({ especialidad: especialidad })
+    const msj = mensage(); // Tu dato
+        await state.update({ msj: msj })})
+    .addAction(
+    async (ctx, { gotoFlow }) => {
+        return gotoFlow(flowDatosObra);
+    })
 
 const flowNefrologia = addKeyword(['23', 'nefrologia']).addAnswer(['Por favor selecione el medico.'])
     .addAnswer([
@@ -795,21 +1295,35 @@ const flowNefrologia = addKeyword(['23', 'nefrologia']).addAnswer(['Por favor se
 
 // KINESIOLOGIA
 
-const flowKinesiologia = addKeyword(['25', 'kinesiologia']).addAnswer([mensage4()])
-  
-        //'Medico 2',
-        //'Medico 3'
-    //])
+const flowKinesiologia = addKeyword(['25', 'kinesiologia']).addAction(
+    async (ctx, { state }) => {
+    const medico = 'Sin asignar'; // Tu dato
+        await state.update({ medico: medico })
+    const especialidad = 'Kinesiologia'; // Tu dato
+        await state.update({ especialidad: especialidad })
+    const msj = mensage4(); // Tu dato
+        await state.update({ msj: msj })})
+    .addAction(
+    async (ctx, { gotoFlow }) => {
+        return gotoFlow(flowDatosFoto);
+    })
 
 
 // TERAPIA OCUPACIONAL
 
-    const flowTerapiaOcu = addKeyword(['26', 'terapia']).addAnswer([mensage5()])
-    //.addAnswer([
-        //'Medico 1',
-        //'Medico 2',
-        //'Medico 3'
-//])
+const flowTerapiaOcu = addKeyword(['26', 'terapia']).addAction(
+        async (ctx, { state }) => {
+        const medico = 'Sin asignar'; // Tu dato
+            await state.update({ medico: medico })
+        const especialidad = 'Terapia Ocupacional'; // Tu dato
+            await state.update({ especialidad: especialidad })
+        const msj = mensage5(); // Tu dato
+            await state.update({ msj: msj })})
+        .addAction(
+        async (ctx, { gotoFlow }) => {
+            return gotoFlow(flowDatosFoto);
+        })
+
 
 
 // VACUNACION
@@ -825,12 +1339,34 @@ const flowVacunacion = addKeyword(['24', 'vacunacion']).addAnswer(['Horario de a
 
 // PSICOLOGIA
 
-const flowPsicologia = addKeyword(['27', 'psicologia']).addAnswer([mensage3()])
+const flowPsicologia = addKeyword(['27', 'psicologia']).addAction(
+    async (ctx, { state }) => {
+    const medico = 'Sin asignar'; // Tu dato
+    await state.update({ medico: medico })
+    const especialidad = 'Psicologia'; // Tu dato
+    await state.update({ especialidad: especialidad })
+    const msj = mensage3(); // Tu dato
+    await state.update({ msj: msj })})
+.addAction(
+    async (ctx, { gotoFlow }) => {
+    return gotoFlow(flowDatosObra);
+    })
 
 
 // NEUROLOGIA
 
-const flowDraAyarza = addKeyword(['1','ayarza']).addAnswer([mensage3()])
+const flowDraAyarza = addKeyword(['1','ayarza']).addAction(
+    async (ctx, { state }) => {
+    const medico = 'Dra. Ayarza Ana'; // Tu dato
+    await state.update({ medico: medico })
+    const especialidad = 'Neurologia'; // Tu dato
+    await state.update({ especialidad: especialidad })
+    const msj = mensage3(); // Tu dato
+    await state.update({ msj: msj })})
+.addAction(
+    async (ctx, { gotoFlow }) => {
+    return gotoFlow(flowDatosObra);
+    })
 
 const flowNeurologia = addKeyword(['28', 'neurologia']).addAnswer(['Por favor selecione el medico.'])
 .addAnswer([
@@ -843,9 +1379,18 @@ const flowNeurologia = addKeyword(['28', 'neurologia']).addAnswer(['Por favor se
 
 // PUERICULTORA
 
-const flowPuericultora = addKeyword(['29','puericultora']).addAnswer([
-    mensage()
-    ])
+const flowPuericultora = addKeyword(['29','puericultora']).addAction(
+    async (ctx, { state }) => {
+    const medico = 'Sin asignar'; // Tu dato
+        await state.update({ medico: medico })
+    const especialidad = 'Puericultora'; // Tu dato
+        await state.update({ especialidad: especialidad })
+    const msj = mensage(); // Tu dato
+        await state.update({ msj: msj })})
+    .addAction(
+    async (ctx, { gotoFlow }) => {
+        return gotoFlow(flowDatosObra);
+    })
 
 
 
@@ -902,10 +1447,22 @@ const flowConsultorio = addKeyword(['1','consultorio','medico','0'])
 
 // ######
 
+
 // ESTUDIO GASTROENTEROLOGICO
 
 const flowEstGastroenterologicos = addKeyword(['10','Gastroenterologicos'])
-    .addAnswer([mensage4()])
+.addAction(
+    async (ctx, { state }) => {
+    const medico = 'Sin asignar'; // Tu dato
+        await state.update({ medico: medico })
+    const especialidad = 'Estudio Gastroenterologo'; // Tu dato
+        await state.update({ especialidad: especialidad })
+    const msj = mensage4(); // Tu dato
+        await state.update({ msj: msj })})
+    .addAction(
+    async (ctx, { gotoFlow }) => {
+        return gotoFlow(flowDatosFoto);
+    })
 
     
 // RAYOS
@@ -930,7 +1487,7 @@ const flowRayos = addKeyword(['rayos','1'])
         '_Recuerde que para radiografía de columna lumbar, lumbosacra o espinograma, debe realizar una dieta liviana 48 hrs antes, evitando consumir lacteos o productos gasificados_'
         ])*/
     .addAnswer(['Para solicitar turno de *rayos*, debe concurrir de manera presencial a la ventanilla de Sala de Gestión del Usuario de lunes a viernes (días hábiles) de 12 a 18 hs con la orden física.',
-'Muchas gracias'])
+'Muchas gracias.'])
 
 // ESPINOGRAFIA
 
@@ -990,75 +1547,113 @@ const flowMagnificaciones = addKeyword(['5','Magnificaciones'])
 // ECOCARDIOGRAMA
 
 const flowEcocardiograma = addKeyword(['6','Ecocardiograma'])
-    .addAnswer([mensage4()])
+.addAction(
+    async (ctx, { state }) => {
+    const medico = 'Sin asignar'; // Tu dato
+        await state.update({ medico: medico })
+    const especialidad = 'Estudio Gastroenterologo'; // Tu dato
+        await state.update({ especialidad: especialidad })
+    const msj = mensage4(); // Tu dato
+        await state.update({ msj: msj })})
+    .addAction(
+    async (ctx, { gotoFlow }) => {
+        return gotoFlow(flowDatosFoto);
+    })
 
 // ELECTROENFACELOGRAMA
 
 const flowElectroenfacelograma = addKeyword(['7','Electroencefalograma'])
-    .addAnswer(['Enviar foto de la orden de indicación',
-        '',
-        'Apellido y nombre:',
-        '',
-        'DNI:',
-        '',
-        'Fecha de nacimiento:',
-        '',
-        'Localidad:',
-        '',
-        '*Obra social (recuerde que los pacientes de PAMI deberán presentar la Orden medica digital y la credencial actualizada)*',
-        '',
-        'Y luego aguarde mientras gestionamos su turno, recibirá un mensaje con la confirmación del mismo'
-        ])
+    //'Enviar foto de la orden de indicación',
+        .addAction(
+            async (ctx, { state }) => {
+            const medico = 'Sin asignar'; // Tu dato
+                await state.update({ medico: medico })
+            const especialidad = 'Electroenfacelograma'; // Tu dato
+                await state.update({ especialidad: especialidad })
+            const msj = '*Recuerde que los pacientes de PAMI deberán presentar la Orden medica digital y la credencial actualizada*\
+            \
+        Y luego aguarde mientras gestionamos su turno, recibirá un mensaje con la confirmación del mismo' // Tu dato
+                await state.update({ msj: msj })})
+            .addAction(
+            async (ctx, { gotoFlow }) => {
+                return gotoFlow(flowFoto);
+            })
 
 // DOPPLER
 
 const flowDoppler = addKeyword(['8','Doppler'])
-    .addAnswer(['Enviar foto de la orden de indicación',
-        '',
-        'Apellido y nombre:',
-        '',
-        'DNI:',
-        '',
-        'Fecha de nacimiento:',
-        '',
-        'Localidad:',
-        '',
-        '*Obra social (recuerde que los pacientes de PAMI deben dirigirse a la agencia de PAMI para consultar convenio o puede también hacerlo telefónicamente a nuestras líneas fijas)*',
-        '',
-        '*Recuerde que solo se realizan Doppler de vasos de cuello, cardíaco, obstétrico, venoso de MMII y arterial de MMII*',
-        '',
-        'Y luego aguarde mientras gestionamos su turno, recibirá un mensaje con la confirmación del mismo'
-        ])
+    //.addAnswer(['Enviar foto de la orden de indicación',
+    .addAction(
+        async (ctx, { state }) => {
+        const medico = 'Sin asignar'; // Tu dato
+            await state.update({ medico: medico })
+        const especialidad = 'Electroenfacelograma'; // Tu dato
+            await state.update({ especialidad: especialidad })
+        const msj = '*Recuerde que los pacientes de PAMI deben dirigirse a la agencia de PAMI para consultar convenio o puede también hacerlo telefónicamente a nuestras líneas fijas)*\
+        \
+        *Recuerde que solo se realizan Doppler de vasos de cuello, cardíaco, obstétrico, venoso de MMII y arterial de MMII*\
+        \
+    Y luego aguarde mientras gestionamos su turno, recibirá un mensaje con la confirmación del mismo' // Tu dato
+            await state.update({ msj: msj })})
+        .addAction(
+        async (ctx, { gotoFlow }) => {
+            return gotoFlow(flowFoto);
+        })
+        
 
 // ESTUDIO AUDIOLOGICO
 
 const flowEstAudiologicos = addKeyword(['9','Estudios audiologicos'])
-    .addAnswer([mensage4()])
+.addAction(
+    async (ctx, { state }) => {
+    const medico = 'Sin asignar'; // Tu dato
+        await state.update({ medico: medico })
+    const especialidad = 'Estudios Audiologicos'; // Tu dato
+        await state.update({ especialidad: especialidad })
+    const msj = mensage4(); // Tu dato
+        await state.update({ msj: msj })})
+    .addAction(
+    async (ctx, { gotoFlow }) => {
+        return gotoFlow(flowDatosFoto);
+    })
 
 
 
 // LABORATORIO
 
 const flowLaboratorio = addKeyword(['11','laboratorio'])
-    .addAnswer([mensage4()])
+.addAction(
+    async (ctx, { state }) => {
+    const medico = 'Sin asignar'; // Tu dato
+        await state.update({ medico: medico })
+    const especialidad = 'Estudio Gastroenterologo'; // Tu dato
+        await state.update({ especialidad: especialidad })
+    const msj = mensage4(); // Tu dato
+        await state.update({ msj: msj })})
+    .addAction(
+    async (ctx, { gotoFlow }) => {
+        return gotoFlow(flowDatosFoto);
+    })
 
 // ESPIROMETRIA
 
 const flowEspirometria = addKeyword(['12','espirometria'])
-    .addAnswer(['Enviar foto de la orden de indicación',
-        '',
-        'Apellido y nombre:',
-        '',
-        'DNI.', 
-        '',
-        'Fecha de nacimiento:',
-        '',
-        'Localidad:',
-        '',
-        '*Obra social (recuerde que los pacientes de PAMI deberán presentar la Orden medica digital y la credencial actualizada)*',
-        '',
-        'Y luego aguarde mientras gestionamos su turno, recibirá un mensaje con la confirmación del mismo'
-        ])
+.addAction(
+    async (ctx, { state }) => {
+    const medico = 'Sin asignar'; // Tu dato
+        await state.update({ medico: medico })
+    const especialidad = 'Electroenfacelograma'; // Tu dato
+        await state.update({ especialidad: especialidad })
+    const msj = '*Recuerde que los pacientes de PAMI deberán presentar la Orden medica digital y la credencial actualizada*\
+    \
+Y luego aguarde mientras gestionamos su turno, recibirá un mensaje con la confirmación del mismo' // Tu dato
+        await state.update({ msj: msj })})
+    .addAction(
+    async (ctx, { gotoFlow }) => {
+        return gotoFlow(flowFoto);
+    })
+    //.addAnswer(['Enviar foto de la orden de indicación',
+    
 
 // ECOGRAFIA
 
@@ -1070,21 +1665,20 @@ const flowEcografia = addKeyword(['13','ecografia'])
 // ELECTROCARDIOGRAMA
 
 const flowElectrocardiograma = addKeyword(['14', 'electrocardiograma'])
-        .addAnswer([
-        'Enviar foto de la orden de indicación',
-        '',
-        'Apellido y nombre:',
-        '',
-        'DNI:',
-        '',
-        'Fecha de nacimiento:',
-        '',
-        'Localidad:',
-        '',
-        '*Obra social (recuerde que los pacientes de PAMI deberán presentar la Orden medica digital y la credencial actualizada)*',
-        '',
-        'Y luego aguarde mientras gestionamos su turno, recibirá un mensaje con la confirmación del mismo'
-        ])
+.addAction(
+    async (ctx, { state }) => {
+    const medico = 'Sin asignar'; // Tu dato
+        await state.update({ medico: medico })
+    const especialidad = 'Ecografia'; // Tu dato
+        await state.update({ especialidad: especialidad })
+    const msj = '*Recuerde que los pacientes de PAMI deberán presentar la Orden medica digital y la credencial actualizada*\
+    \
+Y luego aguarde mientras gestionamos su turno, recibirá un mensaje con la confirmación del mismo' // Tu dato
+        await state.update({ msj: msj })})
+    .addAction(
+    async (ctx, { gotoFlow }) => {
+        return gotoFlow(flowFoto);
+    })
          
 
 // ESTUDIO DE DIAGNOSTICO
@@ -1310,19 +1904,58 @@ const flowMenu = addKeyword(['menu']).addAnswer([
     })
 
 
-
 const main = async () => {
-    const adapterDB = new MockAdapter()
-    const adapterFlow = createFlow([flowPrincipal, flowHorarioAtencion])
-    const adapterProvider = createProvider(BaileysProvider)
-
-    createBot({
-        flow: adapterFlow,
-        provider: adapterProvider,
-        database: adapterDB,
-    })
-
-    QRPortalWeb({port:4000})
-}
-
+    const adapterFlow = createFlow([flowPrincipal, flowDatos, flowHorarioAtencion, flowDatosFoto, flowFoto])
+                
+    const adapterProvider = createProvider(Provider)
+    const adapterDB = new Database()
+            
+    const { handleCtx, httpServer } = await createBot({
+            flow: adapterFlow,
+            provider: adapterProvider,
+            database: adapterDB,
+        })
+            
+            adapterProvider.server.post(
+            '/v1/messages',
+            handleCtx(async (bot, req, res) => {
+            const { number, message, urlMedia } = req.body
+            await bot.sendMessage(number, message, { media: urlMedia ?? null })
+            return res.end('sended')
+            })
+            )
+            
+        adapterProvider.server.post(
+        '/v1/register',
+        handleCtx(async (bot, req, res) => {
+        const { number, name } = req.body
+        await bot.dispatch('REGISTER_FLOW', { from: number, name })
+        return res.end('trigger')
+        })
+        )
+            
+        adapterProvider.server.post(
+        '/v1/samples',
+        handleCtx(async (bot, req, res) => {
+        const { number, name } = req.body
+        await bot.dispatch('SAMPLES', { from: number, name })
+        return res.end('trigger')
+        })
+        )
+            
+        adapterProvider.server.post(
+        '/v1/blacklist',
+        handleCtx(async (bot, req, res) => {
+        const { number, intent } = req.body
+        if (intent === 'remove') bot.blacklist.remove(number)
+        if (intent === 'add') bot.blacklist.add(number)
+            
+        res.writeHead(200, { 'Content-Type': 'application/json' })
+        return res.end(JSON.stringify({ status: 'ok', number, intent }))
+        })
+        )
+            
+        httpServer(+PORT)
+        }
+            
 main()
